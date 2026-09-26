@@ -1,6 +1,6 @@
 # Close-Ready
 
-A month-end close data platform for a simulated SaaS company that bills customers through Stripe in multiple currencies.
+A month-end close data platform for a simulated financial advisory firm that sells prepaid advisory sessions through Stripe in multiple currencies.
 
 It builds a **double-entry general ledger** from Stripe events, runs a **three-way reconciliation** (Stripe ↔ bank ↔ ledger), handles **revenue recognition** and **period close**, and enforces audit-ready controls as automated data tests.
 
