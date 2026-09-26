@@ -1,0 +1,6 @@
+[project]
+name = "close-ready"
+version = "0.1.0"
+description = "Month-end close data platform: double-entry ledger, three-way reconciliation and revenue recognition from Stripe data."
+requires-python = ">=3.12"
+dependencies = []

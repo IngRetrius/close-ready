@@ -1,0 +1,28 @@
+# Personal planning notes (kept local, not published)
+PLAN.md
+
+# Secrets: API keys live in .env, never in git
+.env
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Local warehouse files
+*.duckdb
+*.duckdb.wal
+
+# dbt
+transform/target/
+transform/dbt_packages/
+transform/logs/
+
+# Evidence (dashboard)
+node_modules/
+dashboard/.evidence/
+dashboard/build/
+
+# OS / editor
+.DS_Store
+.vscode/
