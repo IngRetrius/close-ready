@@ -1,0 +1,264 @@
+# Close-Ready business simulator — parameters
+#
+# Every number in this file is an assumption about a small US financial advisory firm.
+# The reasoning behind each one is in docs/simulation.md. This file is the single source
+# of truth: the simulator reads it, and nothing else hard-codes business numbers.
+#
+# Money is in minor units (cents), as in the Stripe API. Shares are fractions that add up to 1.
+
+[run]
+seed = 20251001                    # same seed, same data: the backfill is reproducible
+timezone = "America/New_York"      # the Company's reporting timezone; timestamps are stored in UTC
+start_date = 2025-10-01            # the Company starts operating
+cutover_date = 2026-10-19          # first day of live Stripe activity (ADR-0001); confirm before switching on
+
+[company]
+opening_bank_balance_usd = 2_500_000
+advisors = 3
+session_start_times = ["09:00", "14:00"]   # two 4-hour sessions per advisor per business day
+holiday_calendar = "US"                    # no sessions on weekends or US federal holidays
+max_wait_days = 21                         # no free slot within 21 days of booking: the sale is lost
+
+# Price list with effective dates. Prices are reviewed every 1 January; an invoice uses the
+# list in effect on its invoice date.
+[[prices]]
+product = "individual_session"
+effective_from = 2025-10-01
+usd = 15_000
+eur = 13_500
+gbp = 12_000
+
+[[prices]]
+product = "individual_session"
+effective_from = 2026-01-01
+usd = 16_500
+eur = 15_000
+gbp = 13_000
+
+[[prices]]
+product = "corporate_pack"
+effective_from = 2025-10-01
+usd = 80_000
+eur = 72_000
+gbp = 64_000
+
+[[prices]]
+product = "corporate_pack"
+effective_from = 2026-01-01
+usd = 88_000
+eur = 80_000
+gbp = 70_000
+
+[loyalty_discount]
+effective_from = 2026-01-01        # the loyalty program launches with the 2026 price list
+window_months = 4                  # booking within 4 months of the last attended session
+usd = 5_500
+eur = 5_000
+gbp = 4_500
+
+[demand]
+ramp_up_months = 6                 # demand grows linearly during the first months of operation
+ramp_start_level = 0.30            # first month at 30% of full demand
+monthly_growth_after_ramp = 0.03
+
+# Demand multiplier by calendar month (1.00 = an average month)
+[demand.seasonality.individuals]
+jan = 1.35
+feb = 1.15
+mar = 1.20
+apr = 1.25
+may = 0.95
+jun = 0.85
+jul = 0.75
+aug = 0.80
+sep = 1.00
+oct = 1.05
+nov = 0.95
+dec = 0.70
+
+[demand.seasonality.companies]
+jan = 1.30
+feb = 1.00
+mar = 1.00
+apr = 0.90
+may = 1.00
+jun = 1.10
+jul = 0.70
+aug = 0.70
+sep = 1.00
+oct = 1.10
+nov = 1.20
+dec = 1.00
+
+[individuals]
+new_customers_per_week = 11        # at full demand, before seasonality
+booking_weekday_weights = { mon = 1.20, tue = 1.15, wed = 1.10, thu = 1.00, fri = 0.90, sat = 0.80, sun = 0.85 }
+checkout_decline_rate = 0.03       # card declined at booking: a failed charge, no booking
+decline_retry_success_rate = 0.70  # the customer retries with another card and succeeds
+lead_time_days = { min = 1, mode = 5, max = 21 }   # booking to session (triangular)
+reschedule_rate = 0.06             # moved to a later date, always 48 h or more before the session
+return_probability = 0.40          # after an attended session, the customer books again
+days_to_return = { median = 90, min = 20, max = 300 }   # log-normal, clipped
+goodwill_refund_rate = 0.01        # attended sessions refunded afterwards (account 4100)
+
+# What finally happens to a booked session
+[individuals.outcomes]
+attended = 0.85
+cancelled_with_refund = 0.08       # 48 h or more before: full refund
+cancelled_late = 0.03              # less than 48 h before: forfeited
+no_show = 0.04                     # forfeited
+
+[[individuals.markets]]
+country = "US"
+currency = "usd"
+share = 0.55
+
+[[individuals.markets]]
+country = "CA"
+currency = "usd"
+share = 0.04
+
+[[individuals.markets]]
+country = "MX"
+currency = "usd"
+share = 0.02
+
+[[individuals.markets]]
+country = "CO"
+currency = "usd"
+share = 0.02
+
+[[individuals.markets]]
+country = "DE"
+currency = "eur"
+share = 0.09
+
+[[individuals.markets]]
+country = "ES"
+currency = "eur"
+share = 0.06
+
+[[individuals.markets]]
+country = "FR"
+currency = "eur"
+share = 0.05
+
+[[individuals.markets]]
+country = "NL"
+currency = "eur"
+share = 0.03
+
+[[individuals.markets]]
+country = "IT"
+currency = "eur"
+share = 0.02
+
+[[individuals.markets]]
+country = "GB"
+currency = "gbp"
+share = 0.12
+
+[companies]
+new_companies_per_month = 2.5      # at full demand, before seasonality
+pack_sessions = 10
+pack_validity_months = 12
+payment_terms_days = 15
+repurchase_probability = 0.55      # when a pack is used up or expires
+usage_span_months = { min = 4, max = 12 }   # time over which a company uses its sessions
+no_show_rate = 0.03                # an employee misses a session: forfeited, consumes one session
+service_hold_after_days_overdue = 30        # no new sessions while an invoice is this overdue
+write_off_after_days_overdue = 90           # the invoice is marked uncollectible
+
+# How many of the 10 sessions a company uses before the pack expires
+[[companies.usage_profiles]]
+name = "full"
+share = 0.60
+sessions_used = { min = 10, max = 10 }
+
+[[companies.usage_profiles]]
+name = "partial"
+share = 0.30
+sessions_used = { min = 5, max = 9 }
+
+[[companies.usage_profiles]]
+name = "low"
+share = 0.10
+sessions_used = { min = 1, max = 4 }
+
+# When companies pay their invoice, relative to the due date
+[[companies.payment_behavior]]
+name = "on_time"
+share = 0.70
+days_after_due = { min = -10, max = 0 }
+
+[[companies.payment_behavior]]
+name = "late"
+share = 0.22
+days_after_due = { min = 1, max = 30 }
+
+[[companies.payment_behavior]]
+name = "very_late"
+share = 0.05
+days_after_due = { min = 31, max = 60 }
+
+[[companies.payment_behavior]]
+name = "never"
+share = 0.03                       # written off after write_off_after_days_overdue
+
+[[companies.markets]]
+country = "US"
+currency = "usd"
+share = 0.60
+
+[[companies.markets]]
+country = "DE"
+currency = "eur"
+share = 0.10
+
+[[companies.markets]]
+country = "ES"
+currency = "eur"
+share = 0.05
+
+[[companies.markets]]
+country = "FR"
+currency = "eur"
+share = 0.05
+
+[[companies.markets]]
+country = "NL"
+currency = "eur"
+share = 0.05
+
+[[companies.markets]]
+country = "GB"
+currency = "gbp"
+share = 0.15
+
+[disputes]
+rate = 0.005                       # share of individual card charges disputed (delivered sessions only)
+opened_after_days = { min = 15, max = 75 }    # after the charge
+decided_after_days = { min = 60, max = 75 }   # after the dispute opens
+win_rate = 0.35
+
+# Observed in the sandbox on 2026-09-26 (spike, ADR-0001); revalidated against live data
+[stripe.fees]
+card_percent = 0.029
+card_fixed_usd = 30
+international_card_percent = 0.015           # card issued outside the US
+currency_conversion_percent = 0.01           # charge currency other than USD
+dispute_fee_usd = 1_500
+refund_returns_fee = false                   # to validate with live data
+
+[stripe.fx]
+rate_noise_sd = 0.0015             # Stripe's rate vs the ECB reference rate, as a relative normal noise
+
+[stripe.payouts]
+interval = "daily"
+delay_business_days = 2
+
+# When the scheduling system learns what happened to a session (accounting policy, section 6)
+[recording_delays]
+same_day = 0.90
+days_1_to_5 = 0.08
+days_6_to_15 = 0.02

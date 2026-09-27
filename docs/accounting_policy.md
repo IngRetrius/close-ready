@@ -10,7 +10,7 @@ This document defines how every business event becomes a journal entry. The data
 
 ## 1. The business
 
-The Company is a financial advisory firm based in the United States. Its advisors deliver **4-hour advisory sessions**, remotely, to two customer segments worldwide:
+The Company is a financial advisory firm based in the United States. It started operating on **1 October 2025**, with an initial capital of USD 25,000 deposited in its bank account. Its advisors deliver **4-hour advisory sessions**, remotely, to two customer segments worldwide:
 
 - **Individuals (B2C):** personal finance guidance — budgeting, debt, saving and investment plans.
 - **Companies (B2B):** financial advisory for small businesses and their teams.
@@ -21,12 +21,23 @@ The Company is a financial advisory firm based in the United States. Its advisor
 
 ### Products
 
-| Product | Segment | EUR | USD | GBP | Billing |
-|---|---|---|---|---|---|
-| Individual session (4 h) | Individuals | 150 | 165 | 130 | Paid in full by card at booking |
-| Corporate pack (10 sessions) | Companies | 800 | 880 | 700 | Stripe invoice, payment due in 15 days |
+| Product | Segment | Billing |
+|---|---|---|
+| Individual session (4 h) | Individuals | Paid in full by card at booking |
+| Corporate pack (10 sessions) | Companies | Stripe invoice, payment due in 15 days |
 
-**Loyalty discount:** an individual who books a new session within 4 months of their last attended session gets 50 off that session (EUR 50 / USD 55 / GBP 45). The invoice is issued at the discounted price.
+### Price list
+
+Prices are reviewed every 1 January. An invoice always uses the price list in effect on its invoice date.
+
+| Product | Effective from | EUR | USD | GBP |
+|---|---|---|---|---|
+| Individual session | 1 Oct 2025 | 135 | 150 | 120 |
+| Individual session | 1 Jan 2026 | 150 | 165 | 130 |
+| Corporate pack | 1 Oct 2025 | 720 | 800 | 640 |
+| Corporate pack | 1 Jan 2026 | 800 | 880 | 700 |
+
+**Loyalty discount** (from 1 January 2026): an individual who books a new session within 4 months of their last attended session gets 50 off that session (EUR 50 / USD 55 / GBP 45). The invoice is issued at the discounted price.
 
 ### Delivery (when the customer receives what they paid for)
 
@@ -238,6 +249,7 @@ Cash arrived in January 2026; revenue arrives over twelve months.
 ### Periods and close calendar
 
 - Accounting periods are calendar months. The fiscal year is the calendar year.
+- All business dates follow the Company's timezone, **US Eastern Time** (`America/New_York`). Stripe timestamps are in UTC and are converted before assigning an event date or a period: a payment at 22:00 on 31 March in New York is a March event, even though it is already 1 April in UTC.
 - Each month closes on the **fifth business day of the following month** (BD5). Business days are Monday to Friday, excluding US federal holidays. The close calendar records, for every period, the date it was closed.
 - A closed period is final: it is never reopened, and its reports can always be reproduced exactly as they were at close.
 
