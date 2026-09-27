@@ -4,7 +4,7 @@ A month-end close data platform for a simulated financial advisory firm that sel
 
 It builds a **double-entry general ledger** from Stripe events, runs a **three-way reconciliation** (Stripe ↔ bank ↔ ledger), handles **revenue recognition** and **period close**, and enforces audit-ready controls as automated data tests.
 
-> **Status:** work in progress — Phase 0 (design and foundations).
+> **Status:** work in progress — Phase 1 (business simulator and ingestion).
 
 ## Planned stack
 
