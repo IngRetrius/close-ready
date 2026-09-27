@@ -80,3 +80,8 @@ def test_local_date_rejects_naive_timestamps(calendar):
 )
 def test_add_months(day, months, expected):
     assert add_months(day, months) == expected
+
+
+def test_roll_forward(calendar):
+    assert calendar.roll_forward(date(2026, 9, 8)) == date(2026, 9, 8)  # already a business day
+    assert calendar.roll_forward(date(2026, 9, 5)) == date(2026, 9, 8)  # Saturday -> Tuesday (Labor Day Monday)

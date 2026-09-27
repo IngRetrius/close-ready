@@ -45,6 +45,12 @@ class BusinessCalendar:
                 yield day
             day += timedelta(days=1)
 
+    def roll_forward(self, day: date) -> date:
+        """The day itself if it is a business day, otherwise the next business day."""
+        while not self.is_business_day(day):
+            day += timedelta(days=1)
+        return day
+
     def add_business_days(self, day: date, count: int) -> date:
         """The date `count` business days after `day` (e.g., when Stripe funds become available)."""
         if count < 0:
