@@ -184,11 +184,60 @@ Each session used from this pack releases 93.58 from deferred revenue (the tenth
 
 ## 5. Revenue recognition
 
-<!--
-- When is revenue recognized: at invoice, at payment, or over the service period? Why? (ASC 606 / IFRS 15, one performance obligation)
-- Daily proration or whole months?
-- What happens to deferred revenue on a refund, a cancellation, a plan upgrade mid-period?
--->
+Revenue follows ASC 606 / IFRS 15. The five steps of the standard, applied to this business:
+
+| Step | Individuals | Companies |
+|---|---|---|
+| 1. Identify the contract | Each paid booking | Each finalized pack invoice. The pack is non-cancellable and payment is due in 15 days, so the Company has an unconditional right to payment and records a receivable at invoicing (rule 6). |
+| 2. Identify the performance obligations | One: the session | Ten: each session is a distinct service |
+| 3. Determine the transaction price | The amount paid, net of any loyalty discount | The invoice total |
+| 4. Allocate the price | All of it to the session | Equally to the 10 sessions (pack total ÷ 10, remainder on the tenth, see section 4) |
+| 5. Recognize revenue | When the session takes place | As each session takes place |
+
+A session lasts four hours on a single day, so each obligation is satisfied **at a point in time**: the session date. Revenue is never recognized at booking, invoicing or payment.
+
+### Unused rights (forfeited sessions and breakage)
+
+- **Individuals.** A no-show or a cancellation less than 48 hours before the session ends the customer's right to that session. The deferred amount is recognized in 4050 on the scheduled session date (rule 3).
+- **Companies.** Sessions not used by the pack's expiry date are recognized in 4050 on that date (rule 9).
+
+ASC 606 allows two methods for breakage: recognizing it gradually, in proportion to the sessions used, when the Company can reliably estimate how many sessions will go unused; or recognizing it when the chance of the customer using the remaining sessions becomes remote. The Company has no history to base an estimate on, so it uses the second method and recognizes breakage **at expiry**. This choice should be reviewed once there are at least 12 months of expired packs.
+
+### Loyalty discount
+
+The discount is recorded as a lower price on the discounted session, when that session is booked. Strictly, a discount on a future purchase that is only offered to returning customers can be a *material right*, a separate performance obligation that should receive part of the first session's price. This policy does not apply that treatment (see section 7).
+
+### Refunds and write-offs
+
+- A refund before the session reduces deferred revenue, not revenue (rule 4). A refund after the session goes to 4100 (rule 5).
+- When a corporate invoice is written off, the sessions not yet delivered are cancelled and their deferred amount is reversed; only delivered sessions become bad debt (rule 10).
+
+### Controls
+
+These statements must hold at every month-end and are implemented as automated tests:
+
+1. Every attended or forfeited session has exactly one revenue entry, dated on the session date.
+2. No revenue is recognized before the session date.
+3. For each invoice: revenue recognized + refunds and write-offs of deferred amounts + remaining deferred balance = invoice amount at the historical rate.
+4. Deferred revenue per corporate pack = unused sessions × session amount.
+5. Expired packs have a deferred balance of zero.
+6. Deferred revenue roll-forward: opening balance + amounts invoiced − revenue recognized − refunds and write-offs = closing balance, and the closing balance agrees with account 2100.
+
+### Worked example: revenue waterfall of one pack
+
+A US company buys a pack for USD 880 on 15 January 2026 (USD 88 per session). It uses five sessions: two in February, one in April, one in July and one in November. The pack expires on 15 January 2027 with five sessions unused.
+
+| Month | Sessions used | Revenue 4010 | Forfeited 4050 | Deferred balance at month-end |
+|---|---|---|---|---|
+| Jan 2026 | 0 | 0 | 0 | 880 |
+| Feb 2026 | 2 | 176 | 0 | 704 |
+| Apr 2026 | 1 | 88 | 0 | 616 |
+| Jul 2026 | 1 | 88 | 0 | 528 |
+| Nov 2026 | 1 | 88 | 0 | 440 |
+| Jan 2027 | 0 | 0 | 440 | 0 |
+| **Total** | **5** | **440** | **440** | |
+
+Cash arrived in January 2026; revenue arrives over twelve months.
 
 ## 6. Period close
 
