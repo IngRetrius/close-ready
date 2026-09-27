@@ -149,7 +149,9 @@ The ECB quotes every currency against the euro, so:
 
 ### Realized differences (7100)
 
-When a foreign-currency invoice is paid or refunded, the USD amount Stripe settles differs from the USD amount booked at the ECB rate. The difference is a realized gain or loss, recorded in 7100 within the same journal entry. Stripe's rate includes its own conversion margin, and this policy does not separate that margin from the market movement (see section 7).
+When a foreign-currency invoice is paid or refunded, the USD amount Stripe settles differs from the USD amount booked at the ECB rate. The difference is a realized gain or loss, recorded in 7100 within the same journal entry.
+
+Stripe converts at a rate close to the market rate and reports its currency conversion fee separately, in the fee details of the balance transaction (for example, "Stripe currency conversion fee", 1% of the converted amount). That fee is booked to 6100 with the other Stripe fees (rule 11), so 7100 only reflects the difference between exchange rates. Any small spread left in Stripe's rate stays in 7100 (see section 7).
 
 ### Unrealized differences (7110) and month-end revaluation
 
@@ -280,6 +282,6 @@ Each item below is a deliberate choice, not an oversight.
 | Loyalty discount | Treated as a lower price on the discounted session. | Evaluate it as a material right and allocate part of the earlier session's price to it. |
 | Bad debts | Direct write-off when an invoice is marked uncollectible. | Estimate an allowance for expected credit losses (CECL / IFRS 9) every month. |
 | Disputes | The disputed amount is expensed when Stripe withdraws it and reversed if won. The simulation only disputes sessions already delivered. | Hold disputed funds as a receivable until the outcome, and handle disputes on undelivered sessions against deferred revenue. |
-| Stripe conversion margin | Included in realized FX (7100). | Separate Stripe's conversion fee from the market movement. |
+| Stripe exchange rate spread | Stripe's explicit conversion fee goes to 6100; any spread built into Stripe's rate stays in realized FX (7100). | Compare Stripe's rate with the market rate at the moment of conversion and book the spread as a fee. |
 | Breakage | Recognized at expiry. | Recognize proportionally once enough history exists to estimate it (see section 5). |
 | Reopening periods | Not allowed; corrections are posted in the first open period. | A controlled reopen process with approval and audit trail. |
