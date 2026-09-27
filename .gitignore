@@ -26,3 +26,6 @@ dashboard/build/
 # OS / editor
 .DS_Store
 .vscode/
+
+# Simulator outputs and local warehouse
+data/
