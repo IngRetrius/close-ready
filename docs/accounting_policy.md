@@ -72,7 +72,8 @@ Codes follow the usual convention: 1xxx assets, 2xxx liabilities, 3xxx equity, 4
 | 6150 | Bank fees | Expense | Debit | Fees charged by the bank. |
 | 6200 | Chargeback losses | Expense | Debit | Disputes lost, including dispute fees. |
 | 6300 | Bad debt expense | Expense | Debit | Corporate invoices written off as uncollectible. |
-| 7100 | Foreign exchange gain/loss | Other income/expense | Debit or credit | Realized difference between the rate used to book a sale and the rate Stripe settled at. |
+| 7100 | Foreign exchange gain/loss – realized | Other income/expense | Debit or credit | Difference between the USD amount booked for a sale and the USD amount Stripe settled. |
+| 7110 | Foreign exchange gain/loss – unrealized | Other income/expense | Debit or credit | Month-end revaluation of open receivables in EUR or GBP; reversed on the first day of the next month. |
 
 ### Design notes
 
@@ -126,13 +127,60 @@ Rule 10 splits the write-off: the Company cancels the pack, so the part of the r
 
 Disputes are booked when Stripe withdraws the funds (rule 12), not when the dispute is decided, so that account 1050 always agrees with the Stripe balance. A won dispute reverses the loss (rule 13).
 
+### Month-end
+
+| # | Event | Source | Debit | Credit | Amount | Entry date |
+|---|---|---|---|---|---|---|
+| 17 | Revaluation of open receivables in EUR or GBP | Generated | Gain: 1200 Accounts receivable · Loss: 7110 Unrealized FX | Gain: 7110 Unrealized FX · Loss: 1200 Accounts receivable | Open amount at month-end rate − open amount at booked rate | Last day of the month |
+| 18 | Reversal of rule 17 | Generated | Opposite of rule 17 | Opposite of rule 17 | Same as rule 17 | First day of the next month |
+
 ## 4. Foreign currency
 
-<!--
-- Which rate is used to book an invoice issued in EUR or GBP? From which source, and for which date?
-- Stripe converts the payment to USD at its own rate. Where does the difference go, and is it realized or unrealized?
-- Do we revalue open receivables at month-end? (It is fine to say no, and explain why.)
--->
+### Rate source
+
+European Central Bank euro reference rates, retrieved through the Frankfurter API. The ECB publishes one rate per currency against the euro on each TARGET business day, around 16:00 CET. On weekends and holidays, the most recent earlier rate applies (Frankfurter returns it automatically).
+
+The ECB quotes every currency against the euro, so:
+
+- **EUR → USD** uses the USD-per-EUR rate directly.
+- **GBP → USD** uses the cross rate: USD per GBP = (USD per EUR) ÷ (GBP per EUR).
+- **USD** needs no conversion.
+
+### Which rate for which item
+
+| Item | Rate |
+|---|---|
+| Invoice amount booked to 1200 and 2100 | ECB rate of the invoice date: the payment date for individuals, the finalization date for companies |
+| Revenue released from 2100 (session delivered, forfeited or expired), refunds and write-offs of deferred amounts | The invoice's historical rate. Deferred revenue is never revalued. |
+| Cash in 1050 and 1010 | The USD amount that Stripe or the bank actually reports |
+| Open receivables at month-end | ECB rate of the last business day of the month |
+
+### Realized differences (7100)
+
+When a foreign-currency invoice is paid or refunded, the USD amount Stripe settles differs from the USD amount booked at the ECB rate. The difference is a realized gain or loss, recorded in 7100 within the same journal entry. Stripe's rate includes its own conversion margin, and this policy does not separate that margin from the market movement (see section 7).
+
+### Unrealized differences (7110) and month-end revaluation
+
+A receivable is a **monetary item**: the customer owes a fixed number of euros or pounds, so its USD value moves with the exchange rate. At each month-end, every open receivable in EUR or GBP is revalued at the month-end rate and the difference goes to 7110 (rule 17). The entry reverses on the first day of the next month (rule 18), so the payment entry always compares against the originally booked amount.
+
+Deferred revenue is a **non-monetary item**: the Company owes a service, not an amount of currency. It stays at the historical rate.
+
+### Rounding
+
+Converted amounts are rounded to cents (half up) on each journal line. When an amount is split into parts — for example, a pack into 10 sessions — every part except the last is rounded, and the last part takes the remainder, so the parts always add up to the original amount.
+
+### Worked example
+
+A German company buys a corporate pack for EUR 800 on 2 March 2026 (ECB: 1.1698 USD per EUR). It pays late, on 8 April, and Stripe converts at 1.14 (illustrative).
+
+| Date | Event | Debit | Credit |
+|---|---|---|---|
+| 2 Mar | Invoice finalized: 800 × 1.1698 | 1200 AR 935.84 | 2100 Deferred revenue 935.84 |
+| 31 Mar | Revaluation: 800 × 1.1498 = 919.84 | 7110 Unrealized FX 16.00 | 1200 AR 16.00 |
+| 1 Apr | Reversal of the revaluation | 1200 AR 16.00 | 7110 Unrealized FX 16.00 |
+| 8 Apr | Payment: 800 × 1.14 = 912.00 | 1050 Stripe clearing 912.00 · 7100 Realized FX 23.84 | 1200 AR 935.84 |
+
+Each session used from this pack releases 93.58 from deferred revenue (the tenth releases 93.62), at the 2 March rate, whatever the exchange rate is on the day of the session.
 
 ## 5. Revenue recognition
 
