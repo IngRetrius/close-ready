@@ -31,13 +31,24 @@ def _faker(locale: str) -> Faker:
 
 def fake_person(country: str, rng: random.Random) -> tuple[str, str]:
     """A (name, email) pair, reproducible from the customer's random stream."""
+    fake = _seeded_faker(country, rng)
+    first, last = fake.first_name(), fake.last_name()
+    email = f"{_ascii(first)}.{_ascii(last)}.{rng.randint(10, 9999)}@example.com"
+    return f"{first} {last}", email
+
+
+def fake_company(country: str, rng: random.Random) -> tuple[str, str]:
+    """A (company name, billing email) pair, e.g. ('Scheel KG', 'billing@scheelkg.example.com')."""
+    name = _seeded_faker(country, rng).company()
+    return name, f"billing@{_ascii(name)[:40]}.example.com"
+
+
+def _seeded_faker(country: str, rng: random.Random) -> Faker:
     if country not in LOCALES:
         raise ValueError(f"no name locale configured for country {country!r}")
     fake = _faker(LOCALES[country])
     fake.seed_instance(rng.getrandbits(32))
-    first, last = fake.first_name(), fake.last_name()
-    email = f"{_ascii(first)}.{_ascii(last)}.{rng.randint(10, 9999)}@example.com"
-    return f"{first} {last}", email
+    return fake
 
 
 def _ascii(text: str) -> str:
