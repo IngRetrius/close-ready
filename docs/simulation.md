@@ -50,7 +50,7 @@ The Company does not exist, so its activity is simulated. This document explains
 | Booking lead time | 1–21 days, most often 5 | Short-notice professional appointments. |
 | Outcomes | 85% attended, 8% cancelled with refund, 3% cancelled late, 4% no-show | Prepaid appointments have lower no-show rates than free ones, but never zero. |
 | Rescheduled | 6% | No accounting effect, but moves revenue between months when a session crosses a month-end. |
-| Return rate | 40% book again, typically about 90 days later | About half of the returns fall inside the 4-month loyalty window. |
+| Return rate | 40% book again after an attended session; the wait follows a log-normal distribution (median 90 days, sigma 0.6, clipped to 20–300 days) | About two thirds of the returns fall inside the 4-month loyalty window. |
 | Goodwill refunds | 1% of attended sessions | Rare, but they exercise account 4100. |
 
 ### Companies

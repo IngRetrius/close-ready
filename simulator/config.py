@@ -58,13 +58,16 @@ class TriangularDays(_Model):
         return self
 
 
-class MedianDays(_Model):
-    median: int
+class LogNormalDays(_Model):
+    """A skewed duration in days: most values near the median, a long tail to the right, clipped."""
+
+    median: int = Field(gt=0)
+    sigma: float = Field(gt=0)
     min: int = Field(ge=0)
     max: int
 
     @model_validator(mode="after")
-    def _ordered(self) -> "MedianDays":
+    def _ordered(self) -> "LogNormalDays":
         if not self.min <= self.median <= self.max:
             raise ValueError(f"expected min <= median <= max, got {self.min}, {self.median}, {self.max}")
         return self
@@ -98,6 +101,8 @@ class MonthlyFactors(_Model):
 
 
 class WeekdayWeights(_Model):
+    """Demand weight by day of the week; they must average 1 so they only redistribute demand."""
+
     mon: Factor
     tue: Factor
     wed: Factor
@@ -105,6 +110,17 @@ class WeekdayWeights(_Model):
     fri: Factor
     sat: Factor
     sun: Factor
+
+    @model_validator(mode="after")
+    def _average_is_one(self) -> "WeekdayWeights":
+        average = sum(self.model_dump().values()) / 7
+        if not math.isclose(average, 1.0, abs_tol=1e-6):
+            raise ValueError(f"weekday weights must average 1, got {average:.4f}")
+        return self
+
+    def for_weekday(self, weekday: int) -> float:
+        """Weight for date.weekday() (0 = Monday)."""
+        return list(self.model_dump().values())[weekday]
 
 
 class Market(_Model):
@@ -208,7 +224,7 @@ class IndividualsConfig(_Model):
     lead_time_days: TriangularDays
     reschedule_rate: Probability
     return_probability: Probability
-    days_to_return: MedianDays
+    days_to_return: LogNormalDays
     goodwill_refund_rate: Probability
     outcomes: IndividualOutcomes
     markets: list[Market] = Field(min_length=1)

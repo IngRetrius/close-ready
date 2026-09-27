@@ -98,7 +98,7 @@ decline_retry_success_rate = 0.70  # the customer retries with another card and 
 lead_time_days = { min = 1, mode = 5, max = 21 }   # booking to session (triangular)
 reschedule_rate = 0.06             # moved to a later date, always 48 h or more before the session
 return_probability = 0.40          # after an attended session, the customer books again
-days_to_return = { median = 90, min = 20, max = 300 }   # log-normal, clipped
+days_to_return = { median = 90, sigma = 0.6, min = 20, max = 300 }   # log-normal, clipped
 goodwill_refund_rate = 0.01        # attended sessions refunded afterwards (account 4100)
 
 # What finally happens to a booked session
