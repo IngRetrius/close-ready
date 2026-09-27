@@ -257,6 +257,8 @@ class CompaniesConfig(_Model):
     pack_validity_months: int = Field(ge=1)
     payment_terms_days: int = Field(ge=0)
     repurchase_probability: Probability
+    repurchase_delay_days: IntRange
+    lead_time_days: TriangularDays
     usage_span_months: IntRange
     no_show_rate: Probability
     service_hold_after_days_overdue: int = Field(ge=0)
@@ -276,6 +278,8 @@ class CompaniesConfig(_Model):
         for profile in self.usage_profiles:
             if not 1 <= profile.sessions_used.min <= profile.sessions_used.max <= self.pack_sessions:
                 raise ValueError(f"usage profile {profile.name!r} must use between 1 and pack_sessions sessions")
+        if self.repurchase_delay_days.min < 0:
+            raise ValueError("repurchase_delay_days must not be negative")
         if self.write_off_after_days_overdue <= self.service_hold_after_days_overdue:
             raise ValueError("write_off_after_days_overdue must be later than service_hold_after_days_overdue")
         for behavior in self.payment_behavior:
