@@ -13,4 +13,5 @@ Python · Stripe API · dlt · DuckDB · dbt · Snowflake · Evidence · GitHub 
 ## Documentation
 
 - [Accounting policy](docs/accounting_policy.md) — chart of accounts, posting rules, FX and close policy
+- [Business simulation](docs/simulation.md) — how the Company's activity is simulated, and why
 - [Architecture decision records](docs/decisions/)
