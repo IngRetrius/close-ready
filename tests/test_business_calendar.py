@@ -2,7 +2,7 @@ from datetime import UTC, date, datetime, time
 
 import pytest
 
-from simulator.business_calendar import BusinessCalendar
+from simulator.business_calendar import BusinessCalendar, add_months
 from simulator.config import load_config
 
 
@@ -67,3 +67,16 @@ def test_local_date_assigns_late_evening_payments_to_the_local_day(calendar):
 def test_local_date_rejects_naive_timestamps(calendar):
     with pytest.raises(ValueError):
         calendar.local_date(datetime(2026, 4, 1, 2, 0))
+
+
+@pytest.mark.parametrize(
+    ("day", "months", "expected"),
+    [
+        (date(2026, 1, 15), 4, date(2026, 5, 15)),
+        (date(2026, 1, 31), 1, date(2026, 2, 28)),  # no 31 February
+        (date(2025, 10, 31), 4, date(2026, 2, 28)),  # across a year-end
+        (date(2028, 1, 31), 1, date(2028, 2, 29)),  # leap year
+    ],
+)
+def test_add_months(day, months, expected):
+    assert add_months(day, months) == expected

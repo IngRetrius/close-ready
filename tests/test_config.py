@@ -62,6 +62,7 @@ INVALID_CONFIGS = [
     ("range out of order", _set("disputes.opened_after_days", {"min": 75, "max": 15}), "must not exceed max"),
     ("lead time mode", _set("individuals.lead_time_days.mode", 30), "min <= mode <= max"),
     ("seasonality average", _set("demand.seasonality.companies.dec", 2.0), "must average 1"),
+    ("weekday weights average", _set("individuals.booking_weekday_weights.sun", 2.0), "weekday weights must average 1"),
     ("unknown timezone", _set("run.timezone", "Mars/Olympus"), "unknown timezone"),
     ("cutover before start", _set("run.cutover_date", date(2025, 9, 1)), "cutover_date must be after start_date"),
     ("no price on start date", _set("prices.0.effective_from", date(2025, 11, 1)), "no price for 'individual_session'"),
@@ -81,3 +82,10 @@ def test_invalid_config_is_rejected(raw_config, mutate, message):
 
     with pytest.raises(ValidationError, match=message):
         SimulatorConfig.model_validate(config)
+
+
+def test_weekday_weights_average_one_and_follow_python_weekdays():
+    weights = load_config().individuals.booking_weekday_weights
+
+    assert weights.for_weekday(0) == 1.20  # Monday
+    assert weights.for_weekday(6) == 0.85  # Sunday

@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "Month-end close data platform: double-entry ledger, three-way reconciliation and revenue recognition from Stripe data."
 requires-python = ">=3.12"
 dependencies = [
+    "faker>=40.39.0",
     "holidays>=0.105",
     "pydantic>=2.13.5",
     "python-dotenv>=1.2.3",
