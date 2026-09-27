@@ -64,3 +64,8 @@ def test_write_jsonl(tmp_path):
         "recorded_at": "2026-08-29T18:00:00Z",
         "payload": {"amount": 16_500},
     }
+
+
+def test_timestamps_must_be_whole_seconds():
+    with pytest.raises(ValueError, match="whole second"):
+        _event(occurred_at=OCCURRED.replace(microsecond=5), recorded_at=OCCURRED.replace(microsecond=5))

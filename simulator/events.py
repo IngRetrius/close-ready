@@ -59,8 +59,11 @@ class Event:
 
     def __post_init__(self) -> None:
         for name in ("occurred_at", "recorded_at"):
-            if getattr(self, name).utcoffset() != timedelta(0):
+            value = getattr(self, name)
+            if value.utcoffset() != timedelta(0):
                 raise ValueError(f"{name} must be a UTC timestamp")
+            if value.microsecond:
+                raise ValueError(f"{name} must be a whole second, like Stripe timestamps")
         if self.recorded_at < self.occurred_at:
             raise ValueError("an event cannot be recorded before it occurs")
 

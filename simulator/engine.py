@@ -52,8 +52,12 @@ class Engine:
 
     @property
     def events(self) -> list[Event]:
-        """All events so far, in the order they occurred."""
-        return sorted(self._events, key=lambda e: (e.occurred_at, e.event_id))
+        """All events so far, in the order they occurred.
+
+        The sort is stable: events at the same instant keep the order they were emitted in, which is
+        their causal order (a customer is created before its first payment).
+        """
+        return sorted(self._events, key=lambda e: e.occurred_at)
 
     def run(self, until: date) -> list[Event]:
         """Simulate every day up to `until` (included). Can be called again to continue."""
