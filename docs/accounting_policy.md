@@ -8,14 +8,6 @@ This document defines how every business event becomes a journal entry. The data
 
 **Scope:** the order-to-cash cycle only (booking → billing → collection → cash in bank → revenue). Operating expenses such as payroll or rent are out of scope.
 
-<!--
-HOW TO WRITE THIS DOCUMENT
-- Answer the guiding questions in each section, then delete them.
-- Write for an accountant who has never seen the code.
-- Every rule must be testable: someone should be able to check it with data.
-- It is fine to draft in Spanish first and translate afterwards.
--->
-
 ## 1. The business
 
 The Company is a financial advisory firm based in the United States. Its advisors deliver **4-hour advisory sessions**, remotely, to two customer segments worldwide:
@@ -63,7 +55,7 @@ Codes follow the usual convention: 1xxx assets, 2xxx liabilities, 3xxx equity, 4
 | 1200 | Accounts receivable | Asset | Debit | Corporate pack invoices issued and not yet paid. |
 | 2100 | Deferred revenue | Liability | Credit | Sessions paid or invoiced but not yet delivered or forfeited (contract liability). |
 | 3000 | Owner's equity | Equity | Credit | Capital contributed by the owner, including the opening bank balance. |
-| 3900 | Retained earnings | Equity | Credit | Profit of prior fiscal years, closed from the revenue and expense accounts at year-end. |
+| 3900 | Retained earnings | Equity | Credit | Cumulative result of prior fiscal years. Computed in reporting; no year-end closing entries are posted (see section 7). |
 | 4000 | Advisory revenue – individuals | Revenue | Credit | Individual sessions delivered. |
 | 4010 | Advisory revenue – companies | Revenue | Credit | Corporate pack sessions delivered. |
 | 4050 | Forfeited sessions revenue | Revenue | Credit | Individual no-shows and late cancellations; corporate pack sessions unused at expiry (breakage). |
@@ -241,15 +233,53 @@ Cash arrived in January 2026; revenue arrives over twelve months.
 
 ## 6. Period close
 
-<!--
-- When is a month considered closed?
-- An event dated in a closed month arrives late (e.g., an August refund received in October). Where is it booked, and how is that traceable?
-- Which controls must pass before a period can be closed?
--->
+### Periods and close calendar
+
+- Accounting periods are calendar months. The fiscal year is the calendar year.
+- Each month closes on the **fifth business day of the following month** (BD5). Business days are Monday to Friday, excluding US federal holidays. The close calendar records, for every period, the date it was closed.
+- A closed period is final: it is never reopened, and its reports can always be reproduced exactly as they were at close.
+
+### Event date and posting period
+
+Every journal entry carries two dates:
+
+- **Event date:** when the event happened (the session date, the refund date, the bank statement date).
+- **Posting period:** the period the entry belongs to in the books.
+
+The posting period is the month of the event date **if that month is still open when the event is recorded**. If the month is already closed, the entry is posted to the first open period and flagged as a **late entry**, keeping its original event date and source record.
+
+*Example:* an advisor records on 10 September that a customer did not show up on 29 August. August closed on 8 September (BD5; 7 September is Labor Day), so the forfeited-session revenue is posted to September, flagged as late, with event date 29 August.
+
+To apply this rule, every source record must carry the timestamp when it became known to the Company (for example, when Stripe created the object or when the scheduling system was updated), not only the date of the event.
+
+### Close checklist
+
+A period can be closed only when all of these controls pass:
+
+1. Every journal entry balances, and the trial balance sums to zero.
+2. **Completeness:** every Stripe balance transaction and every session with a final status has its journal entry.
+3. **Session statuses:** no session dated in the period is still pending (every past session is attended, cancelled or forfeited).
+4. **Stripe:** the balance of 1050 agrees with the Stripe balance at period end.
+5. **Bank reconciliation:** the balance of 1010 agrees with the bank statement, after listing every reconciling item with its cause and age.
+6. **Deferred revenue:** the roll-forward (section 5, control 6) ties to account 2100.
+7. **Expired packs** have been released to 4050 (rule 9).
+8. **FX revaluation** of open receivables has been posted with the month-end rates (rule 17).
+9. **Variance review:** every account whose balance changed materially against the previous month has a written explanation.
+
+The checklist result is saved together with the snapshot of the trial balance at close.
 
 ## 7. Simplifications and out of scope
 
-<!--
-List every simplification on purpose. Stating them shows judgment; hiding them looks like ignorance.
-Examples: taxes, multi-entity consolidation, dispute accounting, month-end FX revaluation.
--->
+Each item below is a deliberate choice, not an oversight.
+
+| Topic | What this policy does | What a full implementation would do |
+|---|---|---|
+| Taxes | Invoices carry no sales tax or VAT. | Calculate, collect and remit taxes per jurisdiction, with a tax liability account. |
+| Scope | Order-to-cash only, one legal entity. | Include payables, payroll and fixed assets; consolidate entities and eliminate intercompany balances. |
+| Year-end close | No closing entries; retained earnings are computed in reporting. | Post closing entries that move the year's result into 3900. |
+| Loyalty discount | Treated as a lower price on the discounted session. | Evaluate it as a material right and allocate part of the earlier session's price to it. |
+| Bad debts | Direct write-off when an invoice is marked uncollectible. | Estimate an allowance for expected credit losses (CECL / IFRS 9) every month. |
+| Disputes | The disputed amount is expensed when Stripe withdraws it and reversed if won. The simulation only disputes sessions already delivered. | Hold disputed funds as a receivable until the outcome, and handle disputes on undelivered sessions against deferred revenue. |
+| Stripe conversion margin | Included in realized FX (7100). | Separate Stripe's conversion fee from the market movement. |
+| Breakage | Recognized at expiry. | Recognize proportionally once enough history exists to estimate it (see section 5). |
+| Reopening periods | Not allowed; corrections are posted in the first open period. | A controlled reopen process with approval and audit trail. |
