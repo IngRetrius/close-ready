@@ -164,6 +164,8 @@ pack_sessions = 10
 pack_validity_months = 12
 payment_terms_days = 15
 repurchase_probability = 0.55      # when a pack is used up or expires
+repurchase_delay_days = { min = 1, max = 30 }   # from the end of a pack to the next purchase
+lead_time_days = { min = 3, mode = 10, max = 21 }  # a session is requested this long in advance (triangular)
 usage_span_months = { min = 4, max = 12 }   # time over which a company uses its sessions
 no_show_rate = 0.03                # an employee misses a session: forfeited, consumes one session
 service_hold_after_days_overdue = 30        # no new sessions while an invoice is this overdue

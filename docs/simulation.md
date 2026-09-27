@@ -62,7 +62,9 @@ The Company does not exist, so its activity is simulated. This document explains
 | Payment | 70% on time, 22% up to 30 days late, 5% 31–60 days late, 3% never pay | Produces a realistic receivables aging, with a few write-offs a year. |
 | Service hold | No new sessions after 30 days overdue | Standard credit control. It also limits the bad debt to sessions already delivered. |
 | Write-off | 90 days overdue | The invoice is marked uncollectible (policy rule 10). |
-| Repurchase | 55% buy a new pack when the current one is used up or expires | Repeat corporate revenue. |
+| Repurchase | 55% buy a new pack 1–30 days after the current one is used up or expires; never after a write-off | Repeat corporate revenue. |
+| Session booking | Requested 3–21 days in advance, most often 10 | Companies plan further ahead than individuals. |
+| Cancellations | None: a scheduled pack session is either attended or a no-show | Simplification; individual customers already exercise cancellations and reschedules. |
 
 ### Payments and Stripe
 

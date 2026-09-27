@@ -4,7 +4,7 @@ import re
 import pytest
 
 from simulator.config import load_config
-from simulator.identities import LOCALES, fake_person
+from simulator.identities import LOCALES, fake_company, fake_person
 
 
 def test_every_configured_country_has_a_name_locale():
@@ -28,3 +28,11 @@ def test_emails_are_plain_ascii_on_the_example_domain(country):
 def test_unknown_country_is_an_error():
     with pytest.raises(ValueError):
         fake_person("JP", random.Random(1))
+
+
+@pytest.mark.parametrize("country", sorted(LOCALES))
+def test_company_billing_emails_use_an_example_subdomain(country):
+    name, email = fake_company(country, random.Random(3))
+
+    assert name
+    assert re.fullmatch(r"billing@[a-z0-9]+\.example\.com", email)
