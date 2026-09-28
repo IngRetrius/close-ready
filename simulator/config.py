@@ -164,6 +164,7 @@ class CompanyConfig(_Model):
     session_start_times: list[time] = Field(min_length=1)
     holiday_calendar: Literal["US"]
     max_wait_days: int = Field(ge=1)
+    close_business_day: int = Field(ge=1)
 
     @field_validator("session_start_times")
     @classmethod

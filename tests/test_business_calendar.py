@@ -47,6 +47,12 @@ def test_nth_business_day_beyond_the_month_is_an_error(calendar):
         calendar.nth_business_day(2026, 9, 25)
 
 
+def test_close_date_is_the_fifth_business_day_of_the_next_month(calendar):
+    # Accounting policy, section 6: August 2026 closes on 8 September (7 September is Labor Day)
+    assert calendar.close_date(date(2026, 8, 29), 5) == date(2026, 9, 8)
+    assert calendar.close_date(date(2025, 12, 31), 5) == date(2026, 1, 8)  # across a year-end
+
+
 def test_add_business_days_skips_weekends_and_holidays(calendar):
     friday = date(2026, 9, 4)
     assert calendar.add_business_days(friday, 2) == date(2026, 9, 9)  # skips the weekend and Labor Day

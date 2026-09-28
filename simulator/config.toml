@@ -18,6 +18,7 @@ advisors = 3
 session_start_times = ["09:00", "14:00"]   # two 4-hour sessions per advisor per business day
 holiday_calendar = "US"                    # no sessions on weekends or US federal holidays
 max_wait_days = 21                         # no free slot within 21 days of booking: the sale is lost
+close_business_day = 5                     # a month closes on the 5th business day of the next one (accounting policy, section 6)
 
 # Price list with effective dates. Prices are reviewed every 1 January; an invoice uses the
 # list in effect on its invoice date.
