@@ -239,8 +239,8 @@ currency = "gbp"
 share = 0.15
 
 [disputes]
-rate = 0.005                       # share of individual card charges disputed (delivered sessions only)
-opened_after_days = { min = 15, max = 75 }    # after the charge
+rate = 0.005                       # share of attended individual sessions whose charge is disputed
+opened_after_days = { min = 15, max = 75 }    # after the charge, and never before the session
 decided_after_days = { min = 60, max = 75 }   # after the dispute opens
 win_rate = 0.35
 

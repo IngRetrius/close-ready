@@ -73,7 +73,7 @@ The Company does not exist, so its activity is simulated. This document explains
 | Processing fee | 2.9% + USD 0.30; +1.5% for non-US cards | Observed in the sandbox (ADR-0001). |
 | Currency conversion fee | 1% for charges not in USD | Observed in the sandbox (ADR-0001). |
 | Stripe exchange rate | ECB rate with a small random difference (standard deviation 0.15%) | Stripe converts close to the market rate; the ECB rate is a daily reference, not the rate at the moment of the charge. |
-| Disputes | 0.5% of individual charges; 35% won | At the high end of what card-not-present businesses see, so that a year of data contains several disputes. |
+| Disputes | 0.5% of attended individual sessions; opened 15–75 days after the charge, never before the session; decided 60–75 days later; 35% won | At the high end of what card-not-present businesses see, so that a year of data contains a few disputes. Only delivered sessions are disputed (accounting policy, section 7), and never one already refunded as a goodwill gesture. |
 | Payouts | Daily, 2 business days after the charge | The sandbox account's schedule. |
 
 ### Data recording
