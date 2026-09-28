@@ -35,7 +35,7 @@ class EventType(StrEnum):
     SESSION_BOOKED = "session_booked"                  # no entry
     SESSION_RESCHEDULED = "session_rescheduled"        # no entry, but can move revenue to another month
     SESSION_ATTENDED = "session_attended"              # rules 2 and 8
-    SESSION_NO_SHOW = "session_no_show"                # rule 3
+    SESSION_NO_SHOW = "session_no_show"                # rules 3 and 19
     SESSION_CANCELLED = "session_cancelled"            # rule 3 if late; otherwise a refund follows
     REFUND_ISSUED = "refund_issued"                    # rules 4 and 5
     DISPUTE_OPENED = "dispute_opened"                  # rule 12

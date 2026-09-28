@@ -69,6 +69,8 @@ INVALID_CONFIGS = [
     ("discount above price", _set("loyalty_discount.usd", 20_000), "must be lower than the session price"),
     ("pays after write-off", _set("companies.payment_behavior.2.days_after_due", {"min": 31, "max": 95}), "pays after"),
     ("pack usage above pack size", _set("companies.usage_profiles.0.sessions_used", {"min": 10, "max": 12}), "between 1 and pack_sessions"),
+    ("recording delay shares", _set("recording_delays.0.share", 0.5), "recording_delays shares must add up to 1"),
+    ("negative recording delay", _set("recording_delays.0.days", {"min": -1, "max": 0}), "must not be negative"),
 ]
 
 

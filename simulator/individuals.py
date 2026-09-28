@@ -4,7 +4,7 @@ Life of a booking (accounting policy, sections 1 and 3):
     booked and paid by card (a first attempt may be declined)
     -> possibly rescheduled, always 48 hours or more before the session
     -> attended, no-show, cancelled in time (full refund) or cancelled late (forfeited)
-    -> after an attended session: possibly a goodwill refund, possibly a return visit
+    -> after an attended session: possibly a goodwill refund or a dispute, possibly a return visit
 
 Each customer has its own random stream, and every random decision about a booking is drawn when
 the booking is made, so one customer's story never depends on the order other events run in.
@@ -22,8 +22,8 @@ from simulator.demand import demand_level, poisson
 from simulator.engine import Engine
 from simulator.events import EventType, deterministic_id
 from simulator.identities import fake_person
+from simulator.recording import outcome_recorded_at
 
-SESSION_LENGTH = timedelta(hours=4)
 FREE_CANCELLATION_NOTICE = timedelta(hours=48)
 BOOKING_HOURS = (7, 23)  # customers book online between 07:00 and 23:00, Company time
 GOODWILL_REFUND_TIME = time(11, 0)
@@ -75,6 +75,7 @@ class Booking:
     amount: int
     slot: Slot
     start: datetime
+    paid_at: datetime
     last_change: datetime  # payment or latest reschedule: cancellations happen after it
     plan: BookingPlan
 
@@ -155,7 +156,7 @@ class IndividualsFlow:
             {"segment": "individual", "booking_id": booking_id, "customer_id": customer.customer_id,
              "advisor": slot.advisor, "scheduled_start": start},
         )
-        booking = Booking(customer, booking_id, session_id, charge["amount"], slot, start, paid_at, plan)
+        booking = Booking(customer, booking_id, session_id, charge["amount"], slot, start, paid_at, paid_at, plan)
 
         window = start - FREE_CANCELLATION_NOTICE - paid_at
         if plan.reschedule and window > timedelta(0):
@@ -210,17 +211,19 @@ class IndividualsFlow:
         self._emit_session(EventType.SESSION_CANCELLED, booking, when, {"late": True})
 
     def _no_show(self, booking: Booking, when: datetime) -> None:
-        self._emit_session(EventType.SESSION_NO_SHOW, booking, when)
+        self._emit_session(EventType.SESSION_NO_SHOW, booking, when, recorded_at=self._recorded_at(booking, when))
 
     def _attend(self, booking: Booking, when: datetime) -> None:
         engine, plan, customer = self.engine, booking.plan, booking.customer
-        self._emit_session(EventType.SESSION_ATTENDED, booking, when)
+        self._emit_session(EventType.SESSION_ATTENDED, booking, when, recorded_at=self._recorded_at(booking, when))
         session_day = engine.calendar.local_date(when)
         customer.last_attended = session_day
 
         if plan.goodwill_refund:
             refund_at = engine.calendar.to_utc(session_day + timedelta(days=plan.goodwill_delay_days), GOODWILL_REFUND_TIME)
             engine.schedule(refund_at, lambda at: self._refund(booking, at, "goodwill"))
+        else:  # a refunded charge is not disputed
+            self._plan_dispute(booking, session_day)
         if plan.returns:
             return_at = engine.calendar.to_utc(session_day + timedelta(days=plan.days_to_return), plan.return_time)
             engine.schedule(return_at, lambda at: self._book(customer, at))
@@ -232,13 +235,41 @@ class IndividualsFlow:
              "amount": booking.amount, "currency": booking.customer.currency, "reason": reason},
         )
 
-    def _emit_session(self, event_type: EventType, booking: Booking, when: datetime, extra: dict | None = None) -> None:
+    def _plan_dispute(self, booking: Booking, session_day: date) -> None:
+        """A few customers dispute the charge of a session they attended (policy, section 7)."""
+        engine, calendar, settings = self.engine, self.engine.calendar, self.config.disputes
+        # Its own stream: whether a booking is disputed never changes any other part of the history
+        rng = engine.random.stream("dispute", booking.booking_id)
+        if rng.random() >= settings.rate:
+            return
+        opened_after = timedelta(days=rng.randint(settings.opened_after_days.min, settings.opened_after_days.max))
+        # Counted from the charge, but never before the session has taken place
+        opened_on = max(calendar.local_date(booking.paid_at) + opened_after, session_day + timedelta(days=1))
+        opened_at = calendar.to_utc(opened_on, _time_of_day(rng))
+        decided_at = opened_at + timedelta(days=rng.randint(settings.decided_after_days.min, settings.decided_after_days.max))
+        decision = EventType.DISPUTE_WON if rng.random() < settings.win_rate else EventType.DISPUTE_LOST
+
+        dispute_id = deterministic_id("dp", booking.booking_id)
+        payload = {"customer_id": booking.customer.customer_id, "booking_id": booking.booking_id,
+                   "session_id": booking.session_id, "amount": booking.amount, "currency": booking.customer.currency}
+        engine.schedule(opened_at, lambda at: engine.emit(EventType.DISPUTE_OPENED, "stripe", dispute_id, at, payload))
+        engine.schedule(decided_at, lambda at: engine.emit(decision, "stripe", dispute_id, at, payload))
+
+    def _emit_session(
+        self, event_type: EventType, booking: Booking, when: datetime,
+        extra: dict | None = None, recorded_at: datetime | None = None,
+    ) -> None:
         self.engine.emit(
             event_type, "scheduling", booking.session_id, when,
             {"segment": "individual", "booking_id": booking.booking_id,
              "customer_id": booking.customer.customer_id, "advisor": booking.slot.advisor,
              "scheduled_start": booking.start} | (extra or {}),
+            recorded_at=recorded_at,
         )
+
+    def _recorded_at(self, booking: Booking, when: datetime) -> datetime:
+        # Customers cancel online and are recorded at once; advisors record attendance and no-shows
+        return outcome_recorded_at(self.engine, booking.session_id, when)
 
     def _loyalty_discount(self, customer: Individual, booked_on: date) -> int:
         loyalty = self.config.loyalty_discount

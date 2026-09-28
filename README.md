@@ -10,6 +10,17 @@ It builds a **double-entry general ledger** from Stripe events, runs a **three-w
 
 Python · Stripe API · dlt · DuckDB · dbt · Snowflake · Evidence · GitHub Actions · Claude API
 
+## Run the simulator
+
+Requires [uv](https://docs.astral.sh/uv/).
+
+```sh
+uv run python -m simulator backfill   # simulate the history before the cutover date
+uv run pytest                         # run the tests
+```
+
+The backfill writes the simulated business events to `data/ground_truth/events.jsonl` and prints the first year's volumes next to the estimates in [docs/simulation.md](docs/simulation.md).
+
 ## Documentation
 
 - [Accounting policy](docs/accounting_policy.md) — chart of accounts, posting rules, FX and close policy

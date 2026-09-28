@@ -18,6 +18,7 @@ advisors = 3
 session_start_times = ["09:00", "14:00"]   # two 4-hour sessions per advisor per business day
 holiday_calendar = "US"                    # no sessions on weekends or US federal holidays
 max_wait_days = 21                         # no free slot within 21 days of booking: the sale is lost
+close_business_day = 5                     # a month closes on the 5th business day of the next one (accounting policy, section 6)
 
 # Price list with effective dates. Prices are reviewed every 1 January; an invoice uses the
 # list in effect on its invoice date.
@@ -238,8 +239,8 @@ currency = "gbp"
 share = 0.15
 
 [disputes]
-rate = 0.005                       # share of individual card charges disputed (delivered sessions only)
-opened_after_days = { min = 15, max = 75 }    # after the charge
+rate = 0.005                       # share of attended individual sessions whose charge is disputed
+opened_after_days = { min = 15, max = 75 }    # after the charge, and never before the session
 decided_after_days = { min = 60, max = 75 }   # after the dispute opens
 win_rate = 0.35
 
@@ -259,8 +260,20 @@ rate_noise_sd = 0.0015             # Stripe's rate vs the ECB reference rate, as
 interval = "daily"
 delay_business_days = 2
 
-# When the scheduling system learns what happened to a session (accounting policy, section 6)
-[recording_delays]
-same_day = 0.90
-days_1_to_5 = 0.08
-days_6_to_15 = 0.02
+# When the scheduling system learns whether a session was attended or a no-show. Advisors record it
+# themselves, some days late; a late record can arrive after its month has closed (accounting policy,
+# section 6). Days count from the session day.
+[[recording_delays]]
+name = "same_day"
+share = 0.90
+days = { min = 0, max = 0 }
+
+[[recording_delays]]
+name = "late"
+share = 0.08
+days = { min = 1, max = 5 }
+
+[[recording_delays]]
+name = "very_late"
+share = 0.02
+days = { min = 6, max = 15 }

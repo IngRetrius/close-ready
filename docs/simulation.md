@@ -6,7 +6,7 @@ The Company does not exist, so its activity is simulated. This document explains
 
 - **One engine, two outputs** ([ADR-0001](decisions/0001-stripe-data-source.md)). A single business engine decides what happens each day: who books, who attends, who pays late. Before the cutover date it writes records with the Stripe API schema (backfill); from the cutover date on it creates the same activity in the Stripe sandbox through the real API (live).
 - **Reproducible.** The engine uses a fixed random seed: the same configuration always produces the same backfill.
-- **Ground truth.** The engine knows the true story of every event (for example, that a bank deposit is late or that a customer was a no-show recorded days later). It writes that truth to a separate dataset used only to evaluate the platform, never as an input to it.
+- **Ground truth.** The engine knows the true story of every event (for example, that a bank deposit is late or that a customer was a no-show recorded days later). It writes that truth to a separate dataset, `data/ground_truth/`, used only to evaluate the platform, never as an input to it.
 - **Time.** All timestamps are stored in UTC. Business dates — session days, month-ends, business days — follow the Company's timezone, `America/New_York`.
 - **Money** is handled in minor units (cents), as in the Stripe API, to avoid floating-point rounding.
 
@@ -73,18 +73,19 @@ The Company does not exist, so its activity is simulated. This document explains
 | Processing fee | 2.9% + USD 0.30; +1.5% for non-US cards | Observed in the sandbox (ADR-0001). |
 | Currency conversion fee | 1% for charges not in USD | Observed in the sandbox (ADR-0001). |
 | Stripe exchange rate | ECB rate with a small random difference (standard deviation 0.15%) | Stripe converts close to the market rate; the ECB rate is a daily reference, not the rate at the moment of the charge. |
-| Disputes | 0.5% of individual charges; 35% won | At the high end of what card-not-present businesses see, so that a year of data contains several disputes. |
+| Disputes | 0.5% of attended individual sessions; opened 15–75 days after the charge, never before the session; decided 60–75 days later; 35% won | At the high end of what card-not-present businesses see, so that a year of data contains a few disputes. Only delivered sessions are disputed (accounting policy, section 7), and never one already refunded as a goodwill gesture. |
 | Payouts | Daily, 2 business days after the charge | The sandbox account's schedule. |
 
 ### Data recording
 
 | Parameter | Value | Why |
 |---|---|---|
-| Attendance recorded | 90% the same day, 8% within 1–5 days, 2% within 6–15 days | Advisors sometimes update the scheduling system late. Some of those updates arrive after the month has closed and test the late-entry rule (policy, section 6). |
+| Attendance and no-shows recorded | 90% the same day, 8% 1–5 days later, 2% 6–15 days later | Advisors sometimes update the scheduling system late. A record arrives after its month has closed only when a session near a month-end is recorded more than a week late: about once a year. That is enough to test the late-entry rule (policy, section 6). |
+| Everything else | Recorded when it happens | Customers cancel online, and Stripe creates its objects in real time. |
 
 ## Expected volumes, first 12 months
 
-Approximate figures from the parameters; the simulator reports the exact numbers.
+Approximate figures from the parameters. `uv run python -m simulator backfill` reports the exact numbers and compares them with this table.
 
 | Metric | Approximate value |
 |---|---|
@@ -94,7 +95,9 @@ Approximate figures from the parameters; the simulator reports the exact numbers
 | Corporate packs | 31 |
 | Card charges | 650 |
 | Disputes | 2–3 |
-| Advisor utilization | From about 15% in the first month to about 75% in the twelfth |
+| Advisor utilization | From about 7% in the first month to about 75% in the twelfth |
+
+The first month is quiet: demand starts at 30% of its full level, and sessions take place 1–21 days after booking, so part of October's bookings fall in November. About 10 sessions fill 132 slots.
 
 ## Validation against live Stripe data
 

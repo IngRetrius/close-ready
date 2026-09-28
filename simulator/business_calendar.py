@@ -72,6 +72,11 @@ class BusinessCalendar:
                 return day
         raise ValueError(f"{year}-{month:02d} has fewer than {n} business days")
 
+    def close_date(self, day: date, business_day: int) -> date:
+        """The day the month of `day` closes: the n-th business day of the following month."""
+        following = add_months(day.replace(day=1), 1)
+        return self.nth_business_day(following.year, following.month, business_day)
+
     def to_utc(self, day: date, at: time) -> datetime:
         """A local date and time of the Company as a UTC timestamp (daylight saving time included)."""
         return datetime.combine(day, at, tzinfo=self.tz).astimezone(UTC)
