@@ -102,14 +102,14 @@ def test_no_new_sessions_while_more_than_30_days_overdue(engine, packs, by_type)
         assert overdue <= 30 or (pack_id in paid_on and paid_on[pack_id] <= requested_on)
 
 
-def test_write_offs_split_delivered_and_unused_sessions(engine, packs, by_type, sessions_by_pack):
+def test_write_offs_split_used_and_unused_sessions(engine, packs, by_type, sessions_by_pack):
     assert by_type[T.INVOICE_UNCOLLECTIBLE], "expected at least one write-off"
     for event in by_type[T.INVOICE_UNCOLLECTIBLE]:
         pack_id = event.payload["pack_id"]
         due = packs[pack_id].payload["due_date"]
         assert _local(engine, event) == engine.calendar.roll_forward(due + timedelta(days=90))
-        assert event.payload["sessions_delivered"] == len(sessions_by_pack[pack_id])
-        assert event.payload["sessions_delivered"] + event.payload["sessions_unused"] == PACK_SESSIONS
+        assert event.payload["sessions_used"] == len(sessions_by_pack[pack_id])
+        assert event.payload["sessions_used"] + event.payload["sessions_unused"] == PACK_SESSIONS
 
 
 def test_expired_packs_report_their_unused_sessions(engine, packs, by_type, sessions_by_pack):

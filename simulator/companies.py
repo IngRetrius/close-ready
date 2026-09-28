@@ -215,7 +215,7 @@ class CompaniesFlow:
         pack.written_off = pack.ended = True  # the pack is cancelled and the company is not sold again
         self.engine.emit(
             EventType.INVOICE_UNCOLLECTIBLE, "stripe", pack.invoice_id, when,
-            self._invoice_payload(pack) | {"sessions_delivered": pack.sessions_used,
+            self._invoice_payload(pack) | {"sessions_used": pack.sessions_used,
                                           "sessions_unused": self.settings.pack_sessions - pack.sessions_used},
         )
 
