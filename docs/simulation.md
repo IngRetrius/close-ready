@@ -6,7 +6,7 @@ The Company does not exist, so its activity is simulated. This document explains
 
 - **One engine, two outputs** ([ADR-0001](decisions/0001-stripe-data-source.md)). A single business engine decides what happens each day: who books, who attends, who pays late. Before the cutover date it writes records with the Stripe API schema (backfill); from the cutover date on it creates the same activity in the Stripe sandbox through the real API (live).
 - **Reproducible.** The engine uses a fixed random seed: the same configuration always produces the same backfill.
-- **Ground truth.** The engine knows the true story of every event (for example, that a bank deposit is late or that a customer was a no-show recorded days later). It writes that truth to a separate dataset used only to evaluate the platform, never as an input to it.
+- **Ground truth.** The engine knows the true story of every event (for example, that a bank deposit is late or that a customer was a no-show recorded days later). It writes that truth to a separate dataset, `data/ground_truth/`, used only to evaluate the platform, never as an input to it.
 - **Time.** All timestamps are stored in UTC. Business dates — session days, month-ends, business days — follow the Company's timezone, `America/New_York`.
 - **Money** is handled in minor units (cents), as in the Stripe API, to avoid floating-point rounding.
 
@@ -85,7 +85,7 @@ The Company does not exist, so its activity is simulated. This document explains
 
 ## Expected volumes, first 12 months
 
-Approximate figures from the parameters; the simulator reports the exact numbers.
+Approximate figures from the parameters. `uv run python -m simulator backfill` reports the exact numbers and compares them with this table.
 
 | Metric | Approximate value |
 |---|---|
