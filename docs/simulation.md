@@ -95,7 +95,9 @@ Approximate figures from the parameters; the simulator reports the exact numbers
 | Corporate packs | 31 |
 | Card charges | 650 |
 | Disputes | 2–3 |
-| Advisor utilization | From about 15% in the first month to about 75% in the twelfth |
+| Advisor utilization | From about 7% in the first month to about 75% in the twelfth |
+
+The first month is quiet: demand starts at 30% of its full level, and sessions take place 1–21 days after booking, so part of October's bookings fall in November. About 10 sessions fill 132 slots.
 
 ## Validation against live Stripe data
 
