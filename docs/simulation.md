@@ -80,7 +80,8 @@ The Company does not exist, so its activity is simulated. This document explains
 
 | Parameter | Value | Why |
 |---|---|---|
-| Attendance recorded | 90% the same day, 8% within 1–5 days, 2% within 6–15 days | Advisors sometimes update the scheduling system late. Some of those updates arrive after the month has closed and test the late-entry rule (policy, section 6). |
+| Attendance and no-shows recorded | 90% the same day, 8% 1–5 days later, 2% 6–15 days later | Advisors sometimes update the scheduling system late. A record arrives after its month has closed only when a session near a month-end is recorded more than a week late: about once a year. That is enough to test the late-entry rule (policy, section 6). |
+| Everything else | Recorded when it happens | Customers cancel online, and Stripe creates its objects in real time. |
 
 ## Expected volumes, first 12 months
 

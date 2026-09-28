@@ -21,6 +21,7 @@ from simulator.demand import demand_level, poisson
 from simulator.engine import Engine
 from simulator.events import EventType, deterministic_id
 from simulator.identities import fake_company
+from simulator.recording import outcome_recorded_at
 
 BUSINESS_HOURS = (9, 17)  # companies buy, pay and request sessions during office hours, Company time
 EXPIRY_TIME = time(0, 0)  # a pack expires at the start of its expiry date
@@ -199,7 +200,10 @@ class CompaniesFlow:
         engine.schedule(start, lambda at: self._hold_session(pack, session_id, outcome, payload, at))
 
     def _hold_session(self, pack: Pack, session_id: str, outcome: EventType, payload: dict, when: datetime) -> None:
-        self.engine.emit(outcome, "scheduling", session_id, when, payload)
+        self.engine.emit(
+            outcome, "scheduling", session_id, when, payload,
+            recorded_at=outcome_recorded_at(self.engine, session_id, when),
+        )
         pack.sessions_used += 1
         if pack.sessions_used == self.settings.pack_sessions:
             self._end(pack, self.engine.calendar.local_date(when))

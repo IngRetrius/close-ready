@@ -322,14 +322,15 @@ class StripeConfig(_Model):
     payouts: StripePayouts
 
 
-class RecordingDelays(_Model):
-    same_day: Probability
-    days_1_to_5: Probability
-    days_6_to_15: Probability
+class RecordingDelay(_Model):
+    name: str
+    share: Probability
+    days: IntRange  # days after the session day
 
     @model_validator(mode="after")
-    def _shares(self) -> "RecordingDelays":
-        _check_shares(self.model_dump().values(), "recording_delays")
+    def _not_before_the_session(self) -> "RecordingDelay":
+        if self.days.min < 0:
+            raise ValueError(f"recording delay {self.name!r} must not be negative")
         return self
 
 
@@ -343,7 +344,7 @@ class SimulatorConfig(_Model):
     companies: CompaniesConfig
     disputes: DisputesConfig
     stripe: StripeConfig
-    recording_delays: RecordingDelays
+    recording_delays: list[RecordingDelay] = Field(min_length=1)
 
     @model_validator(mode="after")
     def _prices_cover_the_simulation(self) -> "SimulatorConfig":
@@ -353,6 +354,11 @@ class SimulatorConfig(_Model):
         for product in get_args(Product):
             if not any(p.product == product and p.effective_from <= self.run.start_date for p in self.prices):
                 raise ValueError(f"no price for {product!r} in effect on start_date {self.run.start_date}")
+        return self
+
+    @model_validator(mode="after")
+    def _recording_delay_shares(self) -> "SimulatorConfig":
+        _check_shares((d.share for d in self.recording_delays), "recording_delays")
         return self
 
     @model_validator(mode="after")

@@ -147,11 +147,6 @@ def test_some_checkouts_are_declined_and_most_are_retried(by_type):
     assert len(declined & paid) > len(declined - paid)  # 70% of declined customers retry successfully
 
 
-def test_no_event_is_recorded_late_yet(engine):
-    # Recording delays are added in session 1.6
-    assert all(e.recorded_at == e.occurred_at for e in engine.events)
-
-
 def test_two_runs_are_identical():
     first = [e.to_dict() for e in _run(date(2025, 11, 30)).events]
     second = [e.to_dict() for e in _run(date(2025, 11, 30)).events]

@@ -260,8 +260,20 @@ rate_noise_sd = 0.0015             # Stripe's rate vs the ECB reference rate, as
 interval = "daily"
 delay_business_days = 2
 
-# When the scheduling system learns what happened to a session (accounting policy, section 6)
-[recording_delays]
-same_day = 0.90
-days_1_to_5 = 0.08
-days_6_to_15 = 0.02
+# When the scheduling system learns whether a session was attended or a no-show. Advisors record it
+# themselves, some days late; a late record can arrive after its month has closed (accounting policy,
+# section 6). Days count from the session day.
+[[recording_delays]]
+name = "same_day"
+share = 0.90
+days = { min = 0, max = 0 }
+
+[[recording_delays]]
+name = "late"
+share = 0.08
+days = { min = 1, max = 5 }
+
+[[recording_delays]]
+name = "very_late"
+share = 0.02
+days = { min = 6, max = 15 }

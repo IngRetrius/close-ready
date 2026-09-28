@@ -22,8 +22,8 @@ from simulator.demand import demand_level, poisson
 from simulator.engine import Engine
 from simulator.events import EventType, deterministic_id
 from simulator.identities import fake_person
+from simulator.recording import outcome_recorded_at
 
-SESSION_LENGTH = timedelta(hours=4)
 FREE_CANCELLATION_NOTICE = timedelta(hours=48)
 BOOKING_HOURS = (7, 23)  # customers book online between 07:00 and 23:00, Company time
 GOODWILL_REFUND_TIME = time(11, 0)
@@ -210,11 +210,11 @@ class IndividualsFlow:
         self._emit_session(EventType.SESSION_CANCELLED, booking, when, {"late": True})
 
     def _no_show(self, booking: Booking, when: datetime) -> None:
-        self._emit_session(EventType.SESSION_NO_SHOW, booking, when)
+        self._emit_session(EventType.SESSION_NO_SHOW, booking, when, recorded_at=self._recorded_at(booking, when))
 
     def _attend(self, booking: Booking, when: datetime) -> None:
         engine, plan, customer = self.engine, booking.plan, booking.customer
-        self._emit_session(EventType.SESSION_ATTENDED, booking, when)
+        self._emit_session(EventType.SESSION_ATTENDED, booking, when, recorded_at=self._recorded_at(booking, when))
         session_day = engine.calendar.local_date(when)
         customer.last_attended = session_day
 
@@ -232,13 +232,21 @@ class IndividualsFlow:
              "amount": booking.amount, "currency": booking.customer.currency, "reason": reason},
         )
 
-    def _emit_session(self, event_type: EventType, booking: Booking, when: datetime, extra: dict | None = None) -> None:
+    def _emit_session(
+        self, event_type: EventType, booking: Booking, when: datetime,
+        extra: dict | None = None, recorded_at: datetime | None = None,
+    ) -> None:
         self.engine.emit(
             event_type, "scheduling", booking.session_id, when,
             {"segment": "individual", "booking_id": booking.booking_id,
              "customer_id": booking.customer.customer_id, "advisor": booking.slot.advisor,
              "scheduled_start": booking.start} | (extra or {}),
+            recorded_at=recorded_at,
         )
+
+    def _recorded_at(self, booking: Booking, when: datetime) -> datetime:
+        # Customers cancel online and are recorded at once; advisors record attendance and no-shows
+        return outcome_recorded_at(self.engine, booking.session_id, when)
 
     def _loyalty_discount(self, customer: Individual, booked_on: date) -> int:
         loyalty = self.config.loyalty_discount
