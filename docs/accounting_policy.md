@@ -2,7 +2,7 @@
 
 - **Status:** draft
 - **Owner:** Juan Perea
-- **Last updated:** 2026-09-26
+- **Last updated:** 2026-09-28
 
 This document defines how every business event becomes a journal entry. The data platform implements these rules; if the code and this document disagree, the code is wrong.
 
@@ -44,7 +44,7 @@ Prices are reviewed every 1 January. An invoice always uses the price list in ef
 - A session is **delivered on the date it takes place**. The scheduling system, not Stripe, is the source of truth for delivery.
 - Individual sessions take place 1–21 days after booking.
 - **Cancellation policy (individuals):** cancelling 48 hours or more before the session gives a full refund. A later cancellation or a no-show gives no refund, and the session is **forfeited** on its scheduled date.
-- **Corporate packs:** any employee of the customer can use the sessions. Packs are non-refundable and **expire 12 months after purchase**; sessions not used by then are forfeited.
+- **Corporate packs:** any employee of the customer can use the sessions. A scheduled session that the employee misses is forfeited on its date and counts as used. Packs are non-refundable and **expire 12 months after purchase**; sessions not used by then are forfeited.
 
 ### Data sources
 
@@ -69,7 +69,7 @@ Codes follow the usual convention: 1xxx assets, 2xxx liabilities, 3xxx equity, 4
 | 3900 | Retained earnings | Equity | Credit | Cumulative result of prior fiscal years. Computed in reporting; no year-end closing entries are posted (see section 7). |
 | 4000 | Advisory revenue – individuals | Revenue | Credit | Individual sessions delivered. |
 | 4010 | Advisory revenue – companies | Revenue | Credit | Corporate pack sessions delivered. |
-| 4050 | Forfeited sessions revenue | Revenue | Credit | Individual no-shows and late cancellations; corporate pack sessions unused at expiry (breakage). |
+| 4050 | Forfeited sessions revenue | Revenue | Credit | Individual no-shows and late cancellations; corporate pack no-shows; corporate pack sessions unused at expiry (breakage). |
 | 4100 | Refunds after delivery | Contra-revenue | Debit | Goodwill refunds of sessions already delivered. |
 | 6100 | Payment processing fees | Expense | Debit | Stripe processing and currency conversion fees. |
 | 6150 | Bank fees | Expense | Debit | Fees charged by the bank. |
@@ -87,6 +87,8 @@ Codes follow the usual convention: 1xxx assets, 2xxx liabilities, 3xxx equity, 4
 - **Why equity accounts exist in an order-to-cash ledger.** The bank account starts with an opening balance. Without an equity account on the other side of that entry, the trial balance could never sum to zero.
 
 ## 3. Posting rules
+
+Rule numbers are permanent identifiers: the code and the tests refer to them, so a new rule takes the next free number and existing rules are never renumbered.
 
 ### General rules
 
@@ -112,10 +114,11 @@ Codes follow the usual convention: 1xxx assets, 2xxx liabilities, 3xxx equity, 4
 | 6 | Pack invoice finalized | Stripe | 1200 Accounts receivable | 2100 Deferred revenue | Invoice total | Finalization date |
 | 7 | Pack invoice paid | Stripe | 1050 Stripe clearing | 1200 Accounts receivable | Payment amount | Payment date |
 | 8 | Pack session attended | Scheduling | 2100 Deferred revenue | 4010 Revenue – companies | Pack total ÷ 10 | Session date |
+| 19 | Pack session no-show | Scheduling | 2100 Deferred revenue | 4050 Forfeited sessions | Pack total ÷ 10 | Scheduled session date |
 | 9 | Pack expires with unused sessions | Generated | 2100 Deferred revenue | 4050 Forfeited sessions | Unused sessions × (pack total ÷ 10) | Expiry date |
-| 10 | Invoice marked uncollectible | Stripe | 2100 Deferred revenue (unused sessions) and 6300 Bad debt expense (sessions already delivered) | 1200 Accounts receivable | Open invoice amount | Date marked uncollectible |
+| 10 | Invoice marked uncollectible | Stripe | 2100 Deferred revenue (unused sessions) and 6300 Bad debt expense (sessions already used) | 1200 Accounts receivable | Open invoice amount | Date marked uncollectible |
 
-Rule 10 splits the write-off: the Company cancels the pack, so the part of the receivable for sessions not yet delivered was never revenue and is simply reversed against deferred revenue. Only the part for sessions already delivered is a real loss.
+Rule 10 splits the write-off: the Company cancels the pack, so the part of the receivable for sessions not yet used was never revenue and is simply reversed against deferred revenue. Only the part for sessions already used, attended or forfeited, is a real loss: that revenue was recognized and will never be collected.
 
 ### Stripe, bank and other events
 
@@ -204,7 +207,7 @@ A session lasts four hours on a single day, so each obligation is satisfied **at
 ### Unused rights (forfeited sessions and breakage)
 
 - **Individuals.** A no-show or a cancellation less than 48 hours before the session ends the customer's right to that session. The deferred amount is recognized in 4050 on the scheduled session date (rule 3).
-- **Companies.** Sessions not used by the pack's expiry date are recognized in 4050 on that date (rule 9).
+- **Companies.** A scheduled session that the employee misses is forfeited, and its share of the pack is recognized in 4050 on the scheduled session date (rule 19). Sessions not used by the pack's expiry date are recognized in 4050 on that date (rule 9).
 
 ASC 606 allows two methods for breakage: recognizing it gradually, in proportion to the sessions used, when the Company can reliably estimate how many sessions will go unused; or recognizing it when the chance of the customer using the remaining sessions becomes remote. The Company has no history to base an estimate on, so it uses the second method and recognizes breakage **at expiry**. This choice should be reviewed once there are at least 12 months of expired packs.
 
@@ -215,7 +218,7 @@ The discount is recorded as a lower price on the discounted session, when that s
 ### Refunds and write-offs
 
 - A refund before the session reduces deferred revenue, not revenue (rule 4). A refund after the session goes to 4100 (rule 5).
-- When a corporate invoice is written off, the sessions not yet delivered are cancelled and their deferred amount is reversed; only delivered sessions become bad debt (rule 10).
+- When a corporate invoice is written off, the sessions not yet used are cancelled and their deferred amount is reversed; only sessions already used, attended or forfeited, become bad debt (rule 10).
 
 ### Controls
 
@@ -224,7 +227,7 @@ These statements must hold at every month-end and are implemented as automated t
 1. Every attended or forfeited session has exactly one revenue entry, dated on the session date.
 2. No revenue is recognized before the session date.
 3. For each invoice: revenue recognized + refunds and write-offs of deferred amounts + remaining deferred balance = invoice amount at the historical rate.
-4. Deferred revenue per corporate pack = unused sessions × session amount.
+4. Deferred revenue per corporate pack = sessions neither attended nor forfeited × session amount.
 5. Expired packs have a deferred balance of zero.
 6. Deferred revenue roll-forward: opening balance + amounts invoiced − revenue recognized − refunds and write-offs = closing balance, and the closing balance agrees with account 2100.
 
